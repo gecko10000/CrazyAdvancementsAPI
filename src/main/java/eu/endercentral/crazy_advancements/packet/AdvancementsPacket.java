@@ -23,6 +23,7 @@ public class AdvancementsPacket {
     private final boolean reset;
     private final List<Advancement> advancements;
     private final List<NameKey> removedAdvancements;
+    private final boolean showAdvancements;
 
     /**
      * Constructor for creating Advancement Packets
@@ -31,12 +32,21 @@ public class AdvancementsPacket {
      * @param reset               Whether the Client will clear the Advancement Screen before adding the Advancements
      * @param advancements        A list of advancements that should be added to the Advancement Screen
      * @param removedAdvancements A list of NameKeys which should be removed from the Advancement Screen
+     * @param showAdvancements    Whether to show toasts for any completed advancements (must also have showToasts enabled in the advancement itself)
      */
-    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NameKey> removedAdvancements) {
+    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NameKey> removedAdvancements, boolean showAdvancements) {
         this.player = player;
         this.reset = reset;
         this.advancements = advancements == null ? new ArrayList<>() : new ArrayList<>(advancements);
         this.removedAdvancements = removedAdvancements == null ? new ArrayList<>() : new ArrayList<>(removedAdvancements);
+        this.showAdvancements = showAdvancements;
+    }
+
+    /**
+     * For backwards compatibility.
+     */
+    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NameKey> removedAdvancements) {
+        this(player, reset, advancements, removedAdvancements, true);
     }
 
     /**
@@ -75,6 +85,10 @@ public class AdvancementsPacket {
         return new ArrayList<>(removedAdvancements);
     }
 
+    public boolean isShowAdvancements() {
+        return showAdvancements;
+    }
+
     /**
      * Builds a packet that can be sent to a Player
      *
@@ -97,7 +111,7 @@ public class AdvancementsPacket {
         }
 
         //Create Packet
-        ClientboundUpdateAdvancementsPacket packet = new ClientboundUpdateAdvancementsPacket(isReset(), advancements, removedAdvancements, progress, true); // TODO: test showAdvancements :o
+        ClientboundUpdateAdvancementsPacket packet = new ClientboundUpdateAdvancementsPacket(isReset(), advancements, removedAdvancements, progress, showAdvancements);
         return packet;
     }
 

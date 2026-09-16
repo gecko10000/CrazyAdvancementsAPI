@@ -82,7 +82,7 @@ public class ToastPacket {
         }
 
         //Create Packet
-        ClientboundUpdateAdvancementsPacket packet = new ClientboundUpdateAdvancementsPacket(false, advancements, removedAdvancements, progress, true); // TODO: make this passable
+        ClientboundUpdateAdvancementsPacket packet = new ClientboundUpdateAdvancementsPacket(false, advancements, removedAdvancements, progress, true);
         return packet;
     }
 
