@@ -1,14 +1,13 @@
 package eu.endercentral.crazy_advancements;
 
 import com.google.gson.*;
-import eu.endercentral.crazy_advancements.advancement.*;
+import eu.endercentral.crazy_advancements.advancement.Advancement;
+import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay;
 import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay.AdvancementFrame;
-import eu.endercentral.crazy_advancements.advancement.criteria.CriteriaType;
-import eu.endercentral.crazy_advancements.advancement.progress.GenericResult;
-import eu.endercentral.crazy_advancements.advancement.progress.GrantCriteriaResult;
+import eu.endercentral.crazy_advancements.advancement.AdvancementFlag;
+import eu.endercentral.crazy_advancements.advancement.AdvancementVisibility;
 import eu.endercentral.crazy_advancements.advancement.serialized.SerializedAdvancement;
 import eu.endercentral.crazy_advancements.advancement.serialized.SerializedAdvancementDisplay;
-import eu.endercentral.crazy_advancements.command.ProgressChangeOperation;
 import eu.endercentral.crazy_advancements.item.CustomItem;
 import eu.endercentral.crazy_advancements.item.SerializedCustomItem;
 import eu.endercentral.crazy_advancements.manager.AdvancementManager;
@@ -19,7 +18,6 @@ import net.minecraft.network.protocol.game.ClientboundSelectAdvancementsTabPacke
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
@@ -69,6 +67,10 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
     private final List<CustomItem> customItems = new ArrayList<>();
     private AdvancementManager fileAdvancementManager;
+
+    public AdvancementManager getFileAdvancementManager() {
+        return this.fileAdvancementManager;
+    }
 
     /**
      * Reloads the API<br>
@@ -274,7 +276,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        //Init Packet Receiver
+        // Init Packet Receiver
         packetReciever = new AdvancementPacketReceiver();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -283,8 +285,10 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
             fileAdvancementManager.addPlayer(player);
         }
 
-        //Register Events
+        // Register Events
         Bukkit.getPluginManager().registerEvents(this, this);
+        // Commands
+        new CommandHandler(this);
     }
 
     @Override
@@ -383,419 +387,6 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
      */
     public static NameKey getActiveTab(Player player) {
         return activeTabs.get(player.getUniqueId().toString());
-    }
-
-    private final String noPermission = "§cI'm sorry but you do not have permission to perform this command. Please contact the server administrator if you believe that this is an error.";
-    private final String commandIncompatible = "§cThis Command is incompatible with your Arguments!";
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (cmd.getName().equalsIgnoreCase("showtoast")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.showtoast")) {
-                if (args.length >= 3) {
-                    try {
-                        List<Player> players = new ArrayList<>();
-                        for (Entity entity : Bukkit.selectEntities(sender, args[0])) {
-                            if (entity instanceof Player) {
-                                players.add((Player) entity);
-                            }
-                        }
-
-                        if (players.size() > 0) {
-                            ItemStack stack = getItemStack(args[1], sender);
-
-                            if (stack != null) {
-                                int messageStartIndex = 2;
-                                AdvancementFrame frame = AdvancementFrame.parseStrict(args[2]);
-                                if (frame == null) {
-                                    frame = AdvancementFrame.TASK;
-                                } else {
-                                    messageStartIndex = 3;
-                                }
-                                String message = args[messageStartIndex];
-                                if (args.length > messageStartIndex + 1) {
-                                    for (int i = messageStartIndex + 1; i < args.length; i++) {
-                                        message += " " + args[i];
-                                    }
-                                }
-
-                                for (Player player : players) {
-                                    ToastNotification toast = new ToastNotification(stack, message, frame);
-                                    toast.send(player);
-                                }
-
-                                sender.sendMessage(players.size() == 1 ? "§aSuccessfully displayed Toast to §b" + players.get(0).getName() + "§a!" : "§aSuccessfully displayed Toast to §e" + players.size() + "§aPlayers!");
-                            } else {
-                                sender.sendMessage("§c'" + args[1] + "' isn't a valid Item Material");
-                            }
-                        } else {
-                            sender.sendMessage(args[0].startsWith("@") ? "§cNo Player found for Selector §e" + args[0] + "§c" : "§cCan't find Player '§e" + args[0] + "§c'");
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        sender.sendMessage(commandIncompatible);
-                    }
-
-
-                } else {
-                    sender.sendMessage("§cUsage: §r" + cmd.getUsage());
-                }
-            } else {
-                sender.sendMessage(noPermission);
-            }
-            return true;
-        }
-
-        if (cmd.getName().equalsIgnoreCase("grant") || cmd.getName().equalsIgnoreCase("revoke")) {
-            boolean grant = cmd.getName().equalsIgnoreCase("grant");
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.grantrevoke")) {
-                if (args.length >= 3) {
-                    try {
-                        List<Player> players = new ArrayList<>();
-                        for (Entity entity : Bukkit.selectEntities(sender, args[0])) {
-                            if (entity instanceof Player) {
-                                players.add((Player) entity);
-                            }
-                        }
-
-                        if (players.size() > 0) {
-                            AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-
-                            if (manager != null) {
-                                for (Player player : players) {
-                                    if (manager.getPlayers().contains(player)) {
-                                        Advancement advancement = manager.getAdvancement(new NameKey(args[2]));
-
-                                        if (advancement != null) {
-                                            if (args.length >= 4) {
-
-                                                String[] convertedCriteria = Arrays.copyOfRange(args, 3, args.length);
-
-                                                boolean success = false;
-
-                                                if (grant) {
-                                                    if (!advancement.isGranted(player)) {
-                                                        GrantCriteriaResult result = manager.grantCriteria(player, advancement, convertedCriteria);
-                                                        success = result == GrantCriteriaResult.CHANGED;
-                                                    }
-                                                } else {
-                                                    GenericResult result = manager.revokeCriteria(player, advancement, convertedCriteria);
-                                                    success = result == GenericResult.CHANGED;
-                                                }
-
-                                                String criteriaString = "§c" + convertedCriteria[0];
-                                                if (convertedCriteria.length > 1) {
-                                                    for (String criteria : Arrays.copyOfRange(convertedCriteria, 1, convertedCriteria.length - 1)) {
-                                                        criteriaString += "§a, §c" + criteria;
-                                                    }
-                                                    criteriaString += " §aand §c" + convertedCriteria[convertedCriteria.length - 1];
-                                                }
-
-                                                if (success) {
-                                                    if (fileAdvancementManager.equals(manager)) {
-                                                        fileAdvancementManager.saveProgress(player, advancement);
-                                                    }
-                                                    sender.sendMessage("§aSuccessfully " + (grant ? "granted" : "revoked") + " Criteria " + criteriaString + " §afor '§e" + advancement.getName() + "§a' " + (grant ? "to" : "from") + " §b" + player.getName());
-                                                } else {
-                                                    sender.sendMessage("§cCriteria " + criteriaString + " §afor '§e" + advancement.getName() + "§c' " + (grant ? "is already granted to" : "is already not granted to") + " §b" + player.getName());
-                                                }
-
-                                            } else {
-                                                boolean success = false;
-
-                                                if (grant) {
-                                                    if (!advancement.isGranted(player)) {
-                                                        GenericResult result = manager.grantAdvancement(player, advancement);
-                                                        success = result == GenericResult.CHANGED;
-                                                    }
-                                                } else {
-                                                    GenericResult result = manager.revokeAdvancement(player, advancement);
-                                                    success = result == GenericResult.CHANGED;
-                                                }
-
-                                                if (success) {
-                                                    if (fileAdvancementManager.equals(manager)) {
-                                                        fileAdvancementManager.saveProgress(player, advancement);
-                                                    }
-                                                    sender.sendMessage("§aSuccessfully " + (grant ? "granted" : "revoked") + " Advancement '§e" + advancement.getName() + "§a' " + (grant ? "to" : "from") + " §b" + player.getName());
-                                                } else {
-                                                    sender.sendMessage("§cAdvancement '§e" + advancement.getName() + "§c' " + (grant ? "is already granted to" : "is already not granted to") + " §b" + player.getName());
-                                                }
-                                            }
-
-                                        } else {
-                                            sender.sendMessage("§cAdvancement with Name '§e" + args[2] + "§c' does not exist in '§e" + args[1] + "§c'");
-                                        }
-                                    } else {
-                                        sender.sendMessage("§c'§e" + args[1] + "§c' does not contain Player '§e" + args[0] + "§c'");
-                                    }
-                                }
-                            } else {
-                                sender.sendMessage("§cManager with Name '§e" + args[1] + "§c' does not exist");
-                            }
-                        } else {
-                            sender.sendMessage(args[0].startsWith("@") ? "§cNo Player found for Selector §e" + args[0] + "§c" : "§cCan't find Player '§e" + args[0] + "§c'");
-                        }
-
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        sender.sendMessage(commandIncompatible);
-                    }
-
-                } else {
-                    sender.sendMessage("§cUsage: §r" + cmd.getUsage());
-                }
-            } else {
-                sender.sendMessage(noPermission);
-            }
-            return true;
-        }
-
-        if (cmd.getName().equalsIgnoreCase("setprogress")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.grantrevoke")) {
-                if (args.length >= 3) {
-                    try {
-                        List<Player> players = new ArrayList<>();
-                        for (Entity entity : Bukkit.selectEntities(sender, args[0])) {
-                            if (entity instanceof Player) {
-                                players.add((Player) entity);
-                            }
-                        }
-
-                        if (players.size() > 0) {
-                            AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-
-                            if (manager != null) {
-                                for (Player player : players) {
-                                    if (manager.getPlayers().contains(player)) {
-                                        Advancement advancement = manager.getAdvancement(new NameKey(args[2]));
-
-                                        if (advancement != null) {
-                                            if (args.length >= 4) {
-                                                int number = Integer.parseInt(args[3]);
-                                                ProgressChangeOperation operation = args.length >= 5 ? ProgressChangeOperation.parse(args[4]) : ProgressChangeOperation.SET;
-
-                                                int currentProgress = advancement.getProgress(player).getCriteriaProgress();
-                                                int progress = operation.apply(currentProgress, number);
-
-                                                manager.setCriteriaProgress(player, advancement, progress);
-
-                                                if (fileAdvancementManager.equals(manager)) {
-                                                    fileAdvancementManager.saveProgress(player, advancement);
-                                                }
-
-                                                sender.sendMessage("§aSuccessfully updated Criteria Progress §afor Advancement '§e" + advancement.getName() + "§a' for Player §b" + player.getName());
-                                            }
-
-                                        } else {
-                                            sender.sendMessage("§cAdvancement with Name '§e" + args[2] + "§c' does not exist in '§e" + args[1] + "§c'");
-                                        }
-
-                                    } else {
-                                        sender.sendMessage("§c'§e" + args[1] + "§c' does not contain Player '§e" + args[0] + "§c'");
-                                    }
-                                }
-                            } else {
-                                sender.sendMessage("§cManager with Name '§e" + args[1] + "§c' does not exist");
-                            }
-                        } else {
-                            sender.sendMessage(args[0].startsWith("@") ? "§cNo Player found for Selector §e" + args[0] + "§c" : "§cCan't find Player '§e" + args[0] + "§c'");
-                        }
-
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        sender.sendMessage(commandIncompatible);
-                    }
-
-                } else {
-                    sender.sendMessage("§cUsage: §r" + cmd.getUsage());
-                }
-            } else {
-                sender.sendMessage(noPermission);
-            }
-            return true;
-        }
-
-        if (cmd.getName().equalsIgnoreCase("careload")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.reload")) {
-                if (args.length > 0) {
-                    switch (args[0].toLowerCase()) {
-                        case "all":
-                            reload();
-                            sender.sendMessage("§aCrazy Advancements API was reloaded");
-                            break;
-                        case "advancements":
-                            reloadFileAdvancements();
-                            sender.sendMessage("§aJSON Advancements have been reloaded");
-                            break;
-                        case "items":
-                            loadCustomItems();
-                            sender.sendMessage("§aCustom Items have been reloaded");
-                            break;
-                        default:
-                            sender.sendMessage("§cInvalid Reload Category '" + args[0] + "'. Valid categories are all, advancements, items");
-                            break;
-                    }
-                } else {
-                    reload();
-                    sender.sendMessage("§aCrazy Advancements API was reloaded");
-                }
-            }
-        }
-
-        return true;
-    }
-
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        ArrayList<String> tab = new ArrayList<>();
-
-        if (cmd.getName().equalsIgnoreCase("showtoast")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.showtoast")) {
-                if (args.length == 1) {
-                    for (String selector : SELECTORS) {
-                        if (selector.toLowerCase().startsWith(args[0].toLowerCase())) {
-                            tab.add(selector);
-                        }
-                    }
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (player.getName().toLowerCase().startsWith(args[0].toLowerCase())) {
-                            tab.add(player.getName());
-                        }
-                    }
-                } else if (args.length == 2) {
-                    for (Material mat : Material.values()) {
-                        if (mat.isItem() && mat.name().toLowerCase().startsWith(args[1].toLowerCase())) {
-                            tab.add(mat.name().toLowerCase());
-                        }
-                    }
-                    for (CustomItem customItem : customItems) {
-                        if (customItem.getName().toString().startsWith(args[1].toLowerCase())) {
-                            tab.add(customItem.getName().toString());
-                        }
-                    }
-                } else if (args.length == 3) {
-                    for (AdvancementFrame frame : AdvancementFrame.values()) {
-                        if (frame.name().toLowerCase().startsWith(args[2].toLowerCase())) {
-                            tab.add(frame.name().toLowerCase());
-                        }
-                    }
-                }
-            }
-        }
-
-        if (cmd.getName().equalsIgnoreCase("grant") || cmd.getName().equalsIgnoreCase("revoke")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.grantrevoke")) {
-                if (args.length == 1) {
-                    for (String selector : SELECTORS) {
-                        if (selector.toLowerCase().startsWith(args[0].toLowerCase())) {
-                            tab.add(selector);
-                        }
-                    }
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (player.getName().toLowerCase().startsWith(args[0].toLowerCase())) {
-                            tab.add(player.getName());
-                        }
-                    }
-                } else if (args.length == 2) {
-                    for (AdvancementManager manager : AdvancementManager.getAccessibleManagers()) {
-                        if (manager.getName().toString().startsWith(args[1].toLowerCase())) {
-                            tab.add(manager.getName().toString());
-                        }
-                    }
-                } else if (args.length == 3) {
-                    AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-                    if (manager != null) {
-                        for (Advancement advancement : manager.getAdvancements()) {
-                            if (advancement.getName().toString().startsWith(args[2].toLowerCase()) || advancement.getName().getKey().startsWith(args[2].toLowerCase())) {
-                                tab.add(advancement.getName().toString());
-                            }
-                        }
-                    }
-                } else if (args.length >= 4) {
-                    AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-                    if (manager != null) {
-                        Advancement advancement = manager.getAdvancement(new NameKey(args[2]));
-                        if (advancement != null) {
-                            for (String criterion : advancement.getCriteria().getActionNames()) {
-                                if (criterion.toLowerCase().startsWith(args[args.length - 1].toLowerCase())) {
-                                    tab.add(criterion);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (cmd.getName().equalsIgnoreCase("setprogress")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.grantrevoke")) {
-                if (args.length == 1) {
-                    for (String selector : SELECTORS) {
-                        if (selector.toLowerCase().startsWith(args[0].toLowerCase())) {
-                            tab.add(selector);
-                        }
-                    }
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (player.getName().toLowerCase().startsWith(args[0].toLowerCase())) {
-                            tab.add(player.getName());
-                        }
-                    }
-                } else if (args.length == 2) {
-                    for (AdvancementManager manager : AdvancementManager.getAccessibleManagers()) {
-                        if (manager.getName().toString().startsWith(args[1].toLowerCase())) {
-                            tab.add(manager.getName().toString());
-                        }
-                    }
-                } else if (args.length == 3) {
-                    AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-                    if (manager != null) {
-                        for (Advancement advancement : manager.getAdvancements()) {
-                            if ((advancement.getName().toString().startsWith(args[2].toLowerCase()) || advancement.getName().getKey().startsWith(args[2].toLowerCase())) && advancement.getCriteria().getType() == CriteriaType.NUMBER) {
-                                tab.add(advancement.getName().toString());
-                            }
-                        }
-                    }
-                } else if (args.length == 4) {
-                    AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-                    if (manager != null) {
-                        Advancement advancement = manager.getAdvancement(new NameKey(args[2]));
-                        if (advancement != null && advancement.getCriteria().getType() == CriteriaType.NUMBER) {
-                            tab.add(args[3]);
-                            tab.add("" + advancement.getCriteria().getRequiredNumber());
-                        }
-                    }
-                } else if (args.length == 5) {
-                    AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(args[1]));
-                    if (manager != null) {
-                        Advancement advancement = manager.getAdvancement(new NameKey(args[2]));
-                        if (advancement != null && advancement.getCriteria().getType() == CriteriaType.NUMBER) {
-                            for (ProgressChangeOperation operation : ProgressChangeOperation.values()) {
-                                if (operation.name().toLowerCase().startsWith(args[4].toLowerCase())) {
-                                    tab.add(operation.name().toLowerCase());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (cmd.getName().equalsIgnoreCase("careload")) {
-            if (sender.hasPermission("crazyadvancements.command.*") || sender.hasPermission("crazyadvancements.command.reload")) {
-                if ("all".startsWith(args[0])) {
-                    tab.add("all");
-                }
-                if ("advancements".startsWith(args[0])) {
-                    tab.add("advancements");
-                }
-                if ("items".startsWith(args[0])) {
-                    tab.add("items");
-                }
-            }
-        }
-
-        return tab;
     }
 
     private Material getMaterial(String input) {
