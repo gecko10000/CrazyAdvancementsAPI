@@ -20,9 +20,8 @@ import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -81,7 +80,7 @@ public class CommandHandler {
         final ItemStack icon = ctx.getArgument("icon", ItemStack.class);
         final AdvancementDisplay.AdvancementFrame frame = AdvancementDisplay.AdvancementFrame.parse(frameName);
         final String message = ctx.getArgument("message", String.class);
-        ToastNotification toast = new ToastNotification(icon, message, frame);
+        ToastNotification toast = new ToastNotification(icon, MiniMessage.miniMessage().deserialize(message), frame);
         targets.forEach(toast::send);
         ctx.getSource().getSender().sendRichMessage("<green>Displayed toast to " + targets.size() + " players.");
         return Command.SINGLE_SUCCESS;
@@ -137,10 +136,9 @@ public class CommandHandler {
                 failCount++;
             }
         }
-        final Component advancementTitle = JSONComponentSerializer.json().deserialize(advancement.getDisplay().getTitle().getJson().toString());
         ctx.getSource().getSender().sendRichMessage("<green><action> advancement <advancement> to <successes> players (<failures> failures)",
             Placeholder.unparsed("action", isGrant ? "Granted" : "Revoked"),
-            Placeholder.component("advancement", advancementTitle),
+            Placeholder.component("advancement", advancement.getDisplay().getTitle()),
             Placeholder.unparsed("successes", String.valueOf(successCount)),
             Placeholder.unparsed("failures", String.valueOf(failCount))
         );

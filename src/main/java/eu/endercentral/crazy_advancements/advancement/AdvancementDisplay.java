@@ -1,7 +1,6 @@
 package eu.endercentral.crazy_advancements.advancement;
 
-import eu.endercentral.crazy_advancements.JSONMessage;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
 import net.minecraft.advancements.AdvancementType;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -18,7 +17,7 @@ import javax.annotation.Nullable;
 public class AdvancementDisplay {
 
     private ItemStack icon;
-    private JSONMessage title, description;
+    private Component title, description;
     private AdvancementFrame frame;
     private transient AdvancementVisibility vis;
     private String backgroundTexture;
@@ -30,12 +29,12 @@ public class AdvancementDisplay {
     /**
      *
      * @param icon        Icon {@link Material}
-     * @param title       Title {@link JSONMessage}
-     * @param description Description {@link JSONMessage}
+     * @param title       Title {@link Component}
+     * @param description Description {@link Component}
      * @param frame       {@link AdvancementFrame}
      * @param visibility  When an advancement is visible
      */
-    public AdvancementDisplay(Material icon, JSONMessage title, JSONMessage description, AdvancementFrame frame, AdvancementVisibility visibility) {
+    public AdvancementDisplay(Material icon, Component title, Component description, AdvancementFrame frame, AdvancementVisibility visibility) {
         this.icon = new ItemStack(icon);
         this.title = title;
         this.description = description;
@@ -45,53 +44,17 @@ public class AdvancementDisplay {
 
     /**
      *
-     * @param icon        Icon {@link Material}
-     * @param title       Title {@link String}
-     * @param description Description {@link String}
-     * @param frame       {@link AdvancementFrame}
-     * @param visibility  When an advancement is visible
-     */
-    public AdvancementDisplay(Material icon, String title, String description, AdvancementFrame frame, AdvancementVisibility visibility) {
-        this.icon = new ItemStack(icon);
-        TextComponent titleComponent = new TextComponent(title);
-        this.title = new JSONMessage(titleComponent);
-        this.description = new JSONMessage(new TextComponent(description));
-        this.frame = frame;
-        setVisibility(visibility);
-    }
-
-    /**
-     *
      * @param icon              Icon {@link Material}
-     * @param title             Title {@link JSONMessage}
-     * @param description       Description {@link JSONMessage}
+     * @param title             Title {@link Component}
+     * @param description       Description {@link Component}
      * @param frame             {@link AdvancementFrame}
      * @param backgroundTexture Background texture path
      * @param visibility        When an advancement is visible
      */
-    public AdvancementDisplay(Material icon, JSONMessage title, JSONMessage description, AdvancementFrame frame, String backgroundTexture, AdvancementVisibility visibility) {
+    public AdvancementDisplay(Material icon, Component title, Component description, AdvancementFrame frame, String backgroundTexture, AdvancementVisibility visibility) {
         this.icon = new ItemStack(icon);
         this.title = title;
         this.description = description;
-        this.frame = frame;
-        this.backgroundTexture = backgroundTexture;
-        setVisibility(visibility);
-    }
-
-    /**
-     *
-     * @param icon              Icon {@link Material}
-     * @param title             Title {@link String}
-     * @param description       Description {@link String}
-     * @param frame             {@link AdvancementFrame}
-     * @param backgroundTexture Background texture path
-     * @param visibility        When an advancement is visible
-     */
-    public AdvancementDisplay(Material icon, String title, String description, AdvancementFrame frame, String backgroundTexture, AdvancementVisibility visibility) {
-        this.icon = new ItemStack(icon);
-        TextComponent titleComponent = new TextComponent(title);
-        this.title = new JSONMessage(titleComponent);
-        this.description = new JSONMessage(new TextComponent(description));
         this.frame = frame;
         this.backgroundTexture = backgroundTexture;
         setVisibility(visibility);
@@ -102,12 +65,12 @@ public class AdvancementDisplay {
     /**
      *
      * @param icon        Icon {@link ItemStack}
-     * @param title       Title {@link JSONMessage}
-     * @param description Description {@link JSONMessage}
+     * @param title       Title {@link Component}
+     * @param description Description {@link Component}
      * @param frame       {@link AdvancementFrame}
      * @param visibility  When an advancement is visible
      */
-    public AdvancementDisplay(ItemStack icon, JSONMessage title, JSONMessage description, AdvancementFrame frame, AdvancementVisibility visibility) {
+    public AdvancementDisplay(ItemStack icon, Component title, Component description, AdvancementFrame frame, AdvancementVisibility visibility) {
         this.icon = icon;
         this.title = title;
         this.description = description;
@@ -117,53 +80,17 @@ public class AdvancementDisplay {
 
     /**
      *
-     * @param icon        Icon {@link ItemStack}
-     * @param title       Title {@link String}
-     * @param description Description {@link String}
-     * @param frame       {@link AdvancementFrame}
-     * @param visibility  When an advancement is visible
-     */
-    public AdvancementDisplay(ItemStack icon, String title, String description, AdvancementFrame frame, AdvancementVisibility visibility) {
-        this.icon = icon;
-        TextComponent titleComponent = new TextComponent(title);
-        this.title = new JSONMessage(titleComponent);
-        this.description = new JSONMessage(new TextComponent(description));
-        this.frame = frame;
-        setVisibility(visibility);
-    }
-
-    /**
-     *
      * @param icon              Icon {@link ItemStack}
-     * @param title             Title {@link JSONMessage}
-     * @param description       Description {@link JSONMessage}
+     * @param title             Title {@link Component}
+     * @param description       Description {@link Component}
      * @param frame             {@link AdvancementFrame}
      * @param backgroundTexture Background texture path
      * @param visibility        When an advancement is visible
      */
-    public AdvancementDisplay(ItemStack icon, JSONMessage title, JSONMessage description, AdvancementFrame frame, String backgroundTexture, AdvancementVisibility visibility) {
+    public AdvancementDisplay(ItemStack icon, Component title, Component description, AdvancementFrame frame, String backgroundTexture, AdvancementVisibility visibility) {
         this.icon = icon;
         this.title = title;
         this.description = description;
-        this.frame = frame;
-        this.backgroundTexture = backgroundTexture;
-        setVisibility(visibility);
-    }
-
-    /**
-     *
-     * @param icon              Icon {@link ItemStack}
-     * @param title             Title {@link String}
-     * @param description       Description {@link String}
-     * @param frame             {@link AdvancementFrame}
-     * @param backgroundTexture Background texture path
-     * @param visibility        When an advancement is visible
-     */
-    public AdvancementDisplay(ItemStack icon, String title, String description, AdvancementFrame frame, String backgroundTexture, AdvancementVisibility visibility) {
-        this.icon = icon;
-        TextComponent titleComponent = new TextComponent(title);
-        this.title = new JSONMessage(titleComponent);
-        this.description = new JSONMessage(new TextComponent(description));
         this.frame = frame;
         this.backgroundTexture = backgroundTexture;
         setVisibility(visibility);
@@ -247,17 +174,17 @@ public class AdvancementDisplay {
 
     /**
      *
-     * @return Title {@link JSONMessage}
+     * @return Title {@link Component}
      */
-    public JSONMessage getTitle() {
+    public Component getTitle() {
         return title;
     }
 
     /**
      *
-     * @return Description {@link JSONMessage}
+     * @return Description {@link Component}
      */
-    public JSONMessage getDescription() {
+    public Component getDescription() {
         return description;
     }
 
@@ -383,38 +310,19 @@ public class AdvancementDisplay {
     /**
      * Changes the Title
      *
-     * @param title New title {@link JSONMessage}
+     * @param title New title {@link Component}
      */
-    public void setTitle(JSONMessage title) {
+    public void setTitle(Component title) {
         this.title = title;
     }
 
     /**
-     * Changes the Title
-     *
-     * @param title New Title {@link String}
-     */
-    public void setTitle(String title) {
-        TextComponent titleComponent = new TextComponent(title);
-        this.title = new JSONMessage(titleComponent);
-    }
-
-    /**
      * Changes the Description
      *
-     * @param description New description {@link JSONMessage}
+     * @param description New description {@link Component}
      */
-    public void setDescription(JSONMessage description) {
+    public void setDescription(Component description) {
         this.description = description;
-    }
-
-    /**
-     * Changes the Description
-     *
-     * @param description New Description {@link String}
-     */
-    public void setDescription(String description) {
-        this.description = new JSONMessage(new TextComponent(description));
     }
 
     /**

@@ -1,20 +1,19 @@
 package eu.endercentral.crazy_advancements.advancement;
 
+import eu.endercentral.crazy_advancements.CrazyAdvancementsAPI;
 import eu.endercentral.crazy_advancements.NameKey;
 import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay.AdvancementFrame;
 import eu.endercentral.crazy_advancements.advancement.criteria.Criteria;
 import eu.endercentral.crazy_advancements.advancement.progress.AdvancementProgress;
+import eu.endercentral.crazy_advancements.advancement.serialized.SerializedAdvancement;
+import eu.endercentral.crazy_advancements.advancement.serialized.SerializedAdvancementDisplay;
 import eu.endercentral.crazy_advancements.manager.AdvancementManager;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.HoverEvent.Action;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.TranslatableComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -360,7 +359,7 @@ public class Advancement {
     }
 
     /**
-     * Checks whether this Adavncement is granted to a certain player
+     * Checks whether this Advancement is granted to a certain player
      *
      * @param player Player to check
      * @return true if advancement is granted
@@ -370,7 +369,7 @@ public class Advancement {
     }
 
     /**
-     * Checks whether this Adavncement is granted to a certain player
+     * Checks whether this Advancement is granted to a certain player
      *
      * @param uuid The uuid of the Player to check
      * @return true if advancement is granted
@@ -466,49 +465,64 @@ public class Advancement {
     /**
      * Gets an Advancement Message
      *
-     * @param player Player who has recieved the advancement
+     * @param player Player who has received the advancement
      * @return The Advancement Message as a Base Component
      */
-    public BaseComponent getMessage(Player player) {
-        String translation = "chat.type.advancement." + display.getFrame().name().toLowerCase();
+    public Component getMessage(final Player player) {
+        final String translationKey = "chat.type.advancement." + display.getFrame().name().toLowerCase();
         boolean challenge = getDisplay().getFrame() == AdvancementFrame.CHALLENGE;
-
-        TranslatableComponent message = new TranslatableComponent();
-        message.setTranslate(translation);
-
-        TextComponent playerNameText = new TextComponent();
-        BaseComponent[] playerNameComponents = TextComponent.fromLegacyText(player.getDisplayName());
-        playerNameText.setExtra(Arrays.asList(playerNameComponents));
-
-        TextComponent title = new TextComponent("[");
-        title.addExtra(display.getTitle().getJson());
-        title.addExtra("]");
-        title.setColor(challenge ? ChatColor.DARK_PURPLE : ChatColor.GREEN);
-
-        TextComponent titleTextComponent = new TextComponent(display.getTitle().getJson());
-        titleTextComponent.setColor(title.getColor());
-
-        Text titleText = new Text(new BaseComponent[]{titleTextComponent});
-        Text descriptionText = new Text(new BaseComponent[]{display.getDescription().getJson()});
-        title.setHoverEvent(new HoverEvent(Action.SHOW_TEXT, titleText, new Text("\n"), descriptionText));
-
-        message.setWith(Arrays.asList(playerNameText, title));
-
-        return message;
+        final Component title = Component.text('[')
+            .append(display.getTitle())
+            .append(Component.text(']'))
+            .colorIfAbsent(challenge ? NamedTextColor.DARK_PURPLE : NamedTextColor.GREEN);
+        final Component titleHover = display.getTitle().appendNewline().append(display.getDescription());
+        return Component.translatable(translationKey,
+            player.displayName(),
+            title.hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(titleHover)));
     }
 
     /**
      * Displays an Advancement Message to every Player saying Player has completed said advancement<br>
      * Note that this doesn't grant the advancement
      *
-     * @param player Player who has recieved the advancement
+     * @param player Player who has received the advancement
      */
-    public void displayMessageToEverybody(Player player) {
-        BaseComponent message = getMessage(player);
+    public void displayMessageToEverybody(final Player player) {
+        final Component message = getMessage(player);
 
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            online.spigot().sendMessage(ChatMessageType.CHAT, message);
+        for (final Player other : Bukkit.getOnlinePlayers()) {
+            other.sendMessage(message);
         }
+    }
+
+    private static final GsonComponentSerializer gson = GsonComponentSerializer.gson();
+
+    public static Advancement fromSerialized(final NameKey name, final SerializedAdvancement serializedAdvancement, final Map<NameKey, Advancement> createdAdvancements) {
+        final NameKey parent = serializedAdvancement.getParent();
+        final SerializedAdvancementDisplay serializedDisplay = serializedAdvancement.getDisplay();
+        final ItemStack icon = CrazyAdvancementsAPI.getItemStack(serializedDisplay.getIcon());
+        final Component title = gson.deserializeFromTree(serializedDisplay.getTitle());
+        final Component description = gson.deserializeFromTree(serializedDisplay.getDescription());
+        final AdvancementFrame frame = AdvancementFrame.parseStrict(serializedDisplay.getFrame());
+        final AdvancementVisibility visibility = AdvancementVisibility.parseVisibility(serializedDisplay.getVisibility());
+
+        final AdvancementDisplay display = new AdvancementDisplay(icon, title, description, frame, visibility);
+        display.setBackgroundTexture(serializedDisplay.getBackgroundTexture());
+        display.setX(serializedDisplay.getX());
+        display.setY(serializedDisplay.getY());
+        final List<AdvancementFlag> flags = new ArrayList<>();
+        if (serializedAdvancement.getFlags() != null) {
+            for (String flagName : serializedAdvancement.getFlags()) {
+                flags.add(AdvancementFlag.valueOf(flagName.toUpperCase(Locale.ROOT)));
+            }
+        }
+
+        Advancement advancement = new Advancement(parent == null ? null : createdAdvancements.get(parent), name, display, flags.toArray(AdvancementFlag[]::new));
+        if (serializedAdvancement.getCriteria() != null) {
+            advancement.setCriteria(serializedAdvancement.getCriteria().deserialize());
+        }
+        advancement.setReward(serializedAdvancement.getReward());
+        return advancement;
     }
 
     @Override

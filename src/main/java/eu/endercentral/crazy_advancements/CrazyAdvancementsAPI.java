@@ -2,12 +2,7 @@ package eu.endercentral.crazy_advancements;
 
 import com.google.gson.*;
 import eu.endercentral.crazy_advancements.advancement.Advancement;
-import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay;
-import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay.AdvancementFrame;
-import eu.endercentral.crazy_advancements.advancement.AdvancementFlag;
-import eu.endercentral.crazy_advancements.advancement.AdvancementVisibility;
 import eu.endercentral.crazy_advancements.advancement.serialized.SerializedAdvancement;
-import eu.endercentral.crazy_advancements.advancement.serialized.SerializedAdvancementDisplay;
 import eu.endercentral.crazy_advancements.item.CustomItem;
 import eu.endercentral.crazy_advancements.item.SerializedCustomItem;
 import eu.endercentral.crazy_advancements.manager.AdvancementManager;
@@ -62,10 +57,10 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     public static final Criterion<?> CRITERION = new Criterion<>(new ImpossibleTrigger(), new ImpossibleTrigger.TriggerInstance());
 
 
-    private static AdvancementPacketReceiver packetReciever;
+    private static AdvancementPacketReceiver packetReceiver;
     private static HashMap<String, NameKey> activeTabs = new HashMap<>();
 
-    private final List<CustomItem> customItems = new ArrayList<>();
+    private static final List<CustomItem> customItems = new ArrayList<>();
     private AdvancementManager fileAdvancementManager;
 
     public AdvancementManager getFileAdvancementManager() {
@@ -93,7 +88,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
         loadFileAdvancements();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            packetReciever.initPlayer(player);
+            packetReceiver.initPlayer(player);
             fileAdvancementManager.loadProgress(player);
             fileAdvancementManager.addPlayer(player);
         }
@@ -164,7 +159,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     private void loadFileAdvancements() {
         File location = new File(getDataFolder().getAbsolutePath() + File.separator + "advancements" + File.separator);
 
-        HashMap<NameKey, SerializedAdvancement> advancements = new HashMap<NameKey, SerializedAdvancement>();
+        HashMap<NameKey, SerializedAdvancement> advancements = new HashMap<>();
 
         location.mkdirs();
         File[] files = location.listFiles();
@@ -188,37 +183,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
                 NameKey parent = serializedAdvancement.getParent();
 
                 if (parent == null || createdAdvancements.containsKey(parent)) {
-                    SerializedAdvancementDisplay serializedAdvancementDisplay = serializedAdvancement.getDisplay();
-
-                    //Generate Display
-                    ItemStack icon = getItemStack(serializedAdvancementDisplay.getIcon());
-                    JSONMessage title = new JSONMessage(serializedAdvancementDisplay.getTitle().deserialize());
-                    JSONMessage description = new JSONMessage(serializedAdvancementDisplay.getDescription().deserialize());
-                    AdvancementFrame frame = AdvancementFrame.parse(serializedAdvancementDisplay.getFrame());
-                    AdvancementVisibility visibility = AdvancementVisibility.parseVisibility(serializedAdvancementDisplay.getVisibility());
-
-                    AdvancementDisplay display = new AdvancementDisplay(icon, title, description, frame, visibility);
-
-                    if (serializedAdvancementDisplay.getBackgroundTexture() != null) {
-                        display.setBackgroundTexture(serializedAdvancementDisplay.getBackgroundTexture());
-                    }
-
-                    display.setX(serializedAdvancementDisplay.getX());
-                    display.setY(serializedAdvancementDisplay.getY());
-
-                    //Generate Advancement
-                    List<AdvancementFlag> flags = new ArrayList<>();
-                    if (serializedAdvancement.getFlags() != null) {
-                        for (String flagName : serializedAdvancement.getFlags()) {
-                            flags.add(AdvancementFlag.valueOf(flagName.toUpperCase(Locale.ROOT)));
-                        }
-                    }
-
-                    Advancement advancement = new Advancement(parent == null ? null : createdAdvancements.get(parent), name, display, flags.toArray(AdvancementFlag[]::new));
-                    if (serializedAdvancement.getCriteria() != null) {
-                        advancement.setCriteria(serializedAdvancement.getCriteria().deserialize());
-                    }
-                    advancement.setReward(serializedAdvancement.getReward());
+                    final Advancement advancement = Advancement.fromSerialized(name, serializedAdvancement, createdAdvancements);
 
                     //Register
                     fileAdvancementManager.addAdvancement(advancement);
@@ -241,7 +206,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     private HashMap<NameKey, SerializedAdvancement> loadAdvancementsFromNamespace(String namespace, String path, File location) {
         File[] files = location.listFiles();
 
-        HashMap<NameKey, SerializedAdvancement> advancements = new HashMap<NameKey, SerializedAdvancement>();
+        HashMap<NameKey, SerializedAdvancement> advancements = new HashMap<>();
 
         for (File file : files) {
             if (file.isDirectory()) {
@@ -277,10 +242,10 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         // Init Packet Receiver
-        packetReciever = new AdvancementPacketReceiver();
+        packetReceiver = new AdvancementPacketReceiver();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            packetReciever.initPlayer(player);
+            packetReceiver.initPlayer(player);
             fileAdvancementManager.loadProgress(player);
             fileAdvancementManager.addPlayer(player);
         }
@@ -320,10 +285,11 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         Player player = e.getPlayer();
-        packetReciever.initPlayer(player);
+        packetReceiver.initPlayer(player);
 
         //Add Player to File Advancement Manager
         fileAdvancementManager.loadProgress(player);
+        // TODO: fix this race condition
         Bukkit.getScheduler().runTaskLater(this, new Runnable() {
 
             @Override
@@ -335,7 +301,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
-        packetReciever.close(e.getPlayer(), packetReciever.getHandlers().get(e.getPlayer().getName()));
+        packetReceiver.close(e.getPlayer(), packetReceiver.getHandlers().get(e.getPlayer().getName()));
 
         //Unload Progress in the File Advancement Manager
         fileAdvancementManager.unloadProgress(e.getPlayer().getUniqueId());
@@ -389,7 +355,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
         return activeTabs.get(player.getUniqueId().toString());
     }
 
-    private Material getMaterial(String input) {
+    private static Material getMaterial(String input) {
         for (Material mat : Material.values()) {
             if (mat.name().equalsIgnoreCase(input)) {
                 return mat;
@@ -398,7 +364,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
         return Material.matchMaterial(input);
     }
 
-    private CustomItem getCustomItem(String input) {
+    private static CustomItem getCustomItem(String input) {
         NameKey inputName = new NameKey(input);
         for (CustomItem item : customItems) {
             if (item.getName().isSimilar(inputName)) {
@@ -408,7 +374,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
         return null;
     }
 
-    private ItemStack getItemStack(String input, CommandSender... commandSender) {
+    public static ItemStack getItemStack(String input, CommandSender... commandSender) {
         int colonIndex = input.indexOf(':');
         String materialName = colonIndex == -1 ? input : input.substring(0, colonIndex);
         String data = colonIndex == -1 ? "" : input.substring(colonIndex + 1);

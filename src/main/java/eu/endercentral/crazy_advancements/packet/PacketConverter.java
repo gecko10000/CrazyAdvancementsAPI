@@ -1,15 +1,15 @@
 package eu.endercentral.crazy_advancements.packet;
 
-import eu.endercentral.crazy_advancements.JSONMessage;
 import eu.endercentral.crazy_advancements.NameKey;
 import eu.endercentral.crazy_advancements.advancement.Advancement;
 import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay;
 import eu.endercentral.crazy_advancements.advancement.AdvancementFlag;
 import eu.endercentral.crazy_advancements.advancement.ToastNotification;
-import net.md_5.bungee.api.chat.TextComponent;
+import io.papermc.paper.adventure.PaperAdventure;
 import net.minecraft.advancements.AdvancementRequirements;
 import net.minecraft.advancements.AdvancementRewards;
 import net.minecraft.core.ClientAsset;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStackTemplate;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
@@ -66,7 +66,8 @@ public class PacketConverter {
         float x = generateX(advancement.getTab(), display.generateX());
         float y = generateY(advancement.getTab(), display.generateY());
 
-        net.minecraft.advancements.DisplayInfo advDisplay = new net.minecraft.advancements.DisplayInfo(icon, display.getTitle().getBaseComponent(), display.getDescription().getBaseComponent(), backgroundTexture, display.getFrame().getNMS(), false, false, advancement.hasFlag(AdvancementFlag.SEND_WITH_HIDDEN_BOOLEAN));
+        final Component title = PaperAdventure.asVanilla(display.getTitle()), description = PaperAdventure.asVanilla(display.getDescription());
+        net.minecraft.advancements.DisplayInfo advDisplay = new net.minecraft.advancements.DisplayInfo(icon, title, description, backgroundTexture, display.getFrame().getNMS(), false, false, advancement.hasFlag(AdvancementFlag.SEND_WITH_HIDDEN_BOOLEAN));
         advDisplay.setLocation(x, y);
 
         Optional<Identifier> parent = advancement.getParent() == null ? Optional.empty() : Optional.of(advancement.getParent().getName().getMinecraftKey());
@@ -84,7 +85,9 @@ public class PacketConverter {
     public static net.minecraft.advancements.Advancement toNmsToastAdvancement(ToastNotification notification) {
         ItemStackTemplate icon = new ItemStackTemplate(CraftItemStack.asNMSCopy(notification.getIcon()).getItem());
 
-        net.minecraft.advancements.DisplayInfo advDisplay = new net.minecraft.advancements.DisplayInfo(icon, notification.getMessage().getBaseComponent(), new JSONMessage(new TextComponent("Toast Notification")).getBaseComponent(), Optional.empty(), notification.getFrame().getNMS(), true, false, true);
+        final Component title = PaperAdventure.asVanilla(notification.getMessage());
+        final Component description = PaperAdventure.asVanilla(net.kyori.adventure.text.Component.text("Toast Notification"));
+        net.minecraft.advancements.DisplayInfo advDisplay = new net.minecraft.advancements.DisplayInfo(icon, title, description, Optional.empty(), notification.getFrame().getNMS(), true, false, true);
 
         net.minecraft.advancements.Advancement adv = new net.minecraft.advancements.Advancement(Optional.empty(), Optional.of(advDisplay), advancementRewards, ToastNotification.NOTIFICATION_CRITERIA.getCriteria(), ToastNotification.NOTIFICATION_CRITERIA.getAdvancementRequirements(), false);
 
