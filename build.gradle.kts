@@ -1,31 +1,33 @@
+import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 
 plugins {
     id("java")
     id("maven-publish")
-    id("io.papermc.paperweight.userdev") version "1.7.7"
-    id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
+    id("de.eldoria.plugin-yml.paper") version "0.9.0"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.23"
 }
 
 group = "eu.endercentral.crazy_advancements"
-version = "2.1.21"
+version = "26.2.0"
 
 repositories {
     mavenCentral()
+    maven("https://papermc.io/repo/repository/maven-public/")
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.21.4-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("26.2.build.+")
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 }
 
 tasks {
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(21)
+        options.release.set(25)
         dependsOn(clean)
     }
 
@@ -35,13 +37,23 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            artifact(tasks.reobfJar)
-            artifact(tasks.jar).classifier = "mojmap"
+            from(components["java"])
         }
     }
 }
 
-bukkit {
+paperweight {
+    reobfArtifactConfiguration = ReobfArtifactConfiguration.MOJANG_PRODUCTION
+}
+
+paper {
+    name = "CrazyAdvancementsAPI"
+    main = "eu.endercentral.crazy_advancements.CrazyAdvancementsAPI"
+    apiVersion = "26.2"
+    load = BukkitPluginDescription.PluginLoadOrder.STARTUP
+}
+
+/*bukkit {
     main = "eu.endercentral.crazy_advancements.CrazyAdvancementsAPI"
     author = "ZockerAxel"
     apiVersion = "1.20.5" // Should be always same as dev bundle version
@@ -77,4 +89,4 @@ bukkit {
             description = "Reloads the Crazy Advancements API. Valid categories are all, advancements, items"
         }
     }
-}
+}*/
