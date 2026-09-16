@@ -3,79 +3,30 @@
 
 ## About
 
-CrazyAdvancementsAPI is an API for creating and managing Advancements programmatically on Minecraft Spigot Servers
+CrazyAdvancementsAPI is an API for creating and managing Advancements programmatically on Paper Servers.
 
 
-## Maven
-Maven with Jitpack only works in API Version 2.1.17a and higher.
+## Compiling
+Use `./gradlew build` to build the plugin. Output will be in `build/libs/`.
 
-First, add the Jitpack Repository to your repositories
-```xml
-<repositories>
-  <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
-  </repository>
-</repositories>
-```
-Then, add the following to your dependencies:
-```xml
-<dependency>
-    <groupId>com.github.ZockerAxel</groupId>
-    <artifactId>CrazyAdvancementsAPI</artifactId>
-    <version>VERSION</version>
-</dependency>
-```
-Or for mojang-mapped jar:
-```xml
-<dependency>
-    <groupId>com.github.ZockerAxel</groupId>
-    <artifactId>CrazyAdvancementsAPI</artifactId>
-    <version>VERSION</version>
-    <classifier>mojmap</classifier>
-</dependency>
-```
-
-
-Replace VERSION with the Version you want, for example for v2.1.21, you would use:
-```xml
-<dependency>
-    <groupId>com.github.ZockerAxel</groupId>
-    <artifactId>CrazyAdvancementsAPI</artifactId>
-    <version>v2.1.21</version>
-</dependency>
-```
 
 ## Gradle
-Gradle with Jitpack only works in API Version 2.1.17a and higher.
-
-First, add the Jitpack Repository to your repositories
+To use this API in a plugin, first publish it to your local Maven repository:
+```
+./gradlew publishToMavenLocal
+```
+Then, add it to your dependencies.
 ```kts
 repositories {
-    maven { url 'https://jitpack.io' }
+    mavenLocal()
 }
 ```
-Then, add the following to your dependencies:
 ```kts
 dependencies {
-    compileOnly("com.github.ZockerAxel:CrazyAdvancementsAPI:VERSION")
+    compileOnly("eu.endercentral.crazy_advancements:CrazyAdvancementsAPI:VERSION")
 }
 ```
-Or for mojang-mapped jar
-```kts
-dependencies {
-    compileOnly("com.github.ZockerAxel:CrazyAdvancementsAPI:VERSION:mojmap")
-}
-```
-
-And replace VERSION with the Version you want, for exmaple for v2.1.21, you would use:
-```kts
-dependencies {
-    compileOnly("com.github.ZockerAxel:CrazyAdvancementsAPI:v2.1.21")
-}
-```
-
-
+Check [build.gradle.kts](https://github.com/gecko10000/CrazyAdvancementsAPI/blob/26.2/build.gradle.kts#L12) for the version to use. It will always align with the Minecraft version, and have an extra number at the end to show the revision for that version.
 
 ## Documentation
 
