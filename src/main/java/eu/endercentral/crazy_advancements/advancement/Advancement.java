@@ -1,7 +1,6 @@
 package eu.endercentral.crazy_advancements.advancement;
 
 import eu.endercentral.crazy_advancements.CrazyAdvancementsAPI;
-import eu.endercentral.crazy_advancements.NameKey;
 import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay.AdvancementFrame;
 import eu.endercentral.crazy_advancements.advancement.criteria.Criteria;
 import eu.endercentral.crazy_advancements.advancement.progress.AdvancementProgress;
@@ -12,6 +11,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class Advancement {
 
-    private final NameKey name;
+    private final NamespacedKey name;
     private final AdvancementDisplay display;
     private Criteria criteria = new Criteria(1);
     private AdvancementReward reward;
@@ -48,7 +48,7 @@ public class Advancement {
      * @param display The Display of the Advancement
      * @param flags   The flags which apply to this Advancement
      */
-    public Advancement(@Nullable Advancement parent, NameKey name, AdvancementDisplay display, AdvancementFlag... flags) {
+    public Advancement(@Nullable Advancement parent, NamespacedKey name, AdvancementDisplay display, AdvancementFlag... flags) {
         this.parent = parent;
         this.childrenTracked = true;
         if (this.parent != null) this.parent.addChild(this);
@@ -68,7 +68,7 @@ public class Advancement {
      *                         AdvancementVisibility might not work as intended
      * @param flags            The flags which apply to this Advancement
      */
-    public Advancement(@Nullable Advancement parent, NameKey name, AdvancementDisplay display, boolean childrenTracking, AdvancementFlag... flags) {
+    public Advancement(@Nullable Advancement parent, NamespacedKey name, AdvancementDisplay display, boolean childrenTracking, AdvancementFlag... flags) {
         this.parent = null;
         this.childrenTracked = childrenTracking;
         if (this.parent != null) this.parent.addChild(this);
@@ -84,7 +84,7 @@ public class Advancement {
      * @param display The Display of the Advancement
      * @param flags   The flags which apply to this Advancement
      */
-    public Advancement(NameKey name, AdvancementDisplay display, AdvancementFlag... flags) {
+    public Advancement(NamespacedKey name, AdvancementDisplay display, AdvancementFlag... flags) {
         this.parent = null;
         this.childrenTracked = true;
         if (this.parent != null) this.parent.addChild(this);
@@ -103,7 +103,7 @@ public class Advancement {
      *                         AdvancementVisibility might not work as intended
      * @param flags            The flags which apply to this Advancement
      */
-    public Advancement(NameKey name, AdvancementDisplay display, boolean childrenTracking, AdvancementFlag... flags) {
+    public Advancement(NamespacedKey name, AdvancementDisplay display, boolean childrenTracking, AdvancementFlag... flags) {
         this.parent = null;
         this.childrenTracked = childrenTracking;
         if (this.parent != null) this.parent.addChild(this);
@@ -117,7 +117,7 @@ public class Advancement {
      *
      * @return The Unique Identifier for this Advancement
      */
-    public NameKey getName() {
+    public NamespacedKey getName() {
         return name;
     }
 
@@ -127,8 +127,8 @@ public class Advancement {
      * @param key Key to check
      * @return true if {@link Advancement} name and key share the same namespace and name
      */
-    public boolean hasName(NameKey key) {
-        return key.getNamespace().equalsIgnoreCase(name.getNamespace()) && key.getKey().equalsIgnoreCase(name.getKey());
+    public boolean hasName(NamespacedKey key) {
+        return name.equals(key);
     }
 
     /**
@@ -231,7 +231,7 @@ public class Advancement {
      *
      * @return NameKey of the Tabs Root Advancement
      */
-    public NameKey getTab() {
+    public NamespacedKey getTab() {
         return getRootAdvancement().getName();
     }
 
@@ -497,8 +497,8 @@ public class Advancement {
 
     private static final GsonComponentSerializer gson = GsonComponentSerializer.gson();
 
-    public static Advancement fromSerialized(final NameKey name, final SerializedAdvancement serializedAdvancement, final Map<NameKey, Advancement> createdAdvancements) {
-        final NameKey parent = serializedAdvancement.getParent();
+    public static Advancement fromSerialized(final NamespacedKey name, final SerializedAdvancement serializedAdvancement, final Map<NamespacedKey, Advancement> createdAdvancements) {
+        final NamespacedKey parent = serializedAdvancement.getParent() == null ? null : NamespacedKey.fromString(serializedAdvancement.getParent());
         final SerializedAdvancementDisplay serializedDisplay = serializedAdvancement.getDisplay();
         final ItemStack icon = CrazyAdvancementsAPI.getItemStack(serializedDisplay.getIcon());
         final Component title = gson.deserializeFromTree(serializedDisplay.getTitle());
@@ -527,7 +527,8 @@ public class Advancement {
 
     @Override
     public boolean equals(Object obj) {
-        return getName().equals(((Advancement) obj).getName());
+        if (!(obj instanceof Advancement adv)) return false;
+        return getName().equals(adv.getName());
     }
 
 

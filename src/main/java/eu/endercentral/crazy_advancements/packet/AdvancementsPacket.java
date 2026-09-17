@@ -1,11 +1,12 @@
 package eu.endercentral.crazy_advancements.packet;
 
-import eu.endercentral.crazy_advancements.NameKey;
+import eu.endercentral.crazy_advancements.CrazyAdvancementsAPI;
 import eu.endercentral.crazy_advancements.advancement.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
 import net.minecraft.resources.Identifier;
+import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
@@ -22,7 +23,7 @@ public class AdvancementsPacket {
     private final Player player;
     private final boolean reset;
     private final List<Advancement> advancements;
-    private final List<NameKey> removedAdvancements;
+    private final List<NamespacedKey> removedAdvancements;
     private final boolean showAdvancements;
 
     /**
@@ -34,7 +35,7 @@ public class AdvancementsPacket {
      * @param removedAdvancements A list of NameKeys which should be removed from the Advancement Screen
      * @param showAdvancements    Whether to show toasts for any completed advancements (must also have showToasts enabled in the advancement itself)
      */
-    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NameKey> removedAdvancements, boolean showAdvancements) {
+    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NamespacedKey> removedAdvancements, boolean showAdvancements) {
         this.player = player;
         this.reset = reset;
         this.advancements = advancements == null ? new ArrayList<>() : new ArrayList<>(advancements);
@@ -45,7 +46,7 @@ public class AdvancementsPacket {
     /**
      * For backwards compatibility.
      */
-    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NameKey> removedAdvancements) {
+    public AdvancementsPacket(Player player, boolean reset, List<Advancement> advancements, List<NamespacedKey> removedAdvancements) {
         this(player, reset, advancements, removedAdvancements, true);
     }
 
@@ -81,7 +82,7 @@ public class AdvancementsPacket {
      *
      * @return The list containing the removed Advancement's NameKeys
      */
-    public List<NameKey> getRemovedAdvancements() {
+    public List<NamespacedKey> getRemovedAdvancements() {
         return new ArrayList<>(removedAdvancements);
     }
 
@@ -102,12 +103,13 @@ public class AdvancementsPacket {
 
         //Populate Lists
         for (Advancement advancement : this.advancements) {
+            final Identifier advancementName = CrazyAdvancementsAPI.namespacedKeyToIdentifier(advancement.getName());
             net.minecraft.advancements.Advancement nmsAdvancement = convertAdvancement(advancement);
-            advancements.add(new AdvancementHolder(advancement.getName().getMinecraftKey(), nmsAdvancement));
-            progress.put(advancement.getName().getMinecraftKey(), advancement.getProgress(getPlayer()).getNmsProgress());
+            advancements.add(new AdvancementHolder(advancementName, nmsAdvancement));
+            progress.put(advancementName, advancement.getProgress(getPlayer()).getNmsProgress());
         }
-        for (NameKey removed : this.removedAdvancements) {
-            removedAdvancements.add(removed.getMinecraftKey());
+        for (NamespacedKey removed : this.removedAdvancements) {
+            removedAdvancements.add(CrazyAdvancementsAPI.namespacedKeyToIdentifier(removed));
         }
 
         //Create Packet

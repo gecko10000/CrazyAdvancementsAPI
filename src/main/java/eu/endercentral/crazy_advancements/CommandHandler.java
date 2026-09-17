@@ -22,6 +22,7 @@ import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEven
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -105,12 +106,12 @@ public class CommandHandler {
             "targets", PlayerSelectorArgumentResolver.class);
         final List<Player> targets = targetsResolver.resolve(ctx.getSource());
         final String managerName = ctx.getArgument("manager", String.class);
-        final AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(managerName));
+        final AdvancementManager manager = AdvancementManager.getAccessibleManager(NamespacedKey.fromString(managerName));
         if (manager == null) {
             throw new RuntimeException("Manager not found: " + managerName);
         }
         final String advancementName = ctx.getArgument("advancement", String.class);
-        final Advancement advancement = manager.getAdvancement(new NameKey(advancementName));
+        final Advancement advancement = manager.getAdvancement(NamespacedKey.fromString(advancementName));
         if (advancement == null) {
             throw new RuntimeException("Advancement not found in manager " + managerName + ": " + advancementName);
         }
@@ -174,12 +175,12 @@ public class CommandHandler {
             "targets", PlayerSelectorArgumentResolver.class);
         final List<Player> targets = targetsResolver.resolve(ctx.getSource());
         final String managerName = ctx.getArgument("manager", String.class);
-        final AdvancementManager manager = AdvancementManager.getAccessibleManager(new NameKey(managerName));
+        final AdvancementManager manager = AdvancementManager.getAccessibleManager(NamespacedKey.fromString(managerName));
         if (manager == null) {
             throw new RuntimeException("Manager not found: " + managerName);
         }
         final String advancementName = ctx.getArgument("advancement", String.class);
-        final Advancement advancement = manager.getAdvancement(new NameKey(advancementName));
+        final Advancement advancement = manager.getAdvancement(NamespacedKey.fromString(advancementName));
         if (advancement == null) {
             throw new RuntimeException("Advancement not found in manager " + managerName + ": " + advancementName);
         }

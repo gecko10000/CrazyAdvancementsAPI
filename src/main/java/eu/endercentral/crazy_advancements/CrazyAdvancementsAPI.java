@@ -10,8 +10,10 @@ import eu.endercentral.crazy_advancements.packet.AdvancementsPacket;
 import net.minecraft.advancements.triggers.Criterion;
 import net.minecraft.advancements.triggers.ImpossibleTrigger;
 import net.minecraft.network.protocol.game.ClientboundSelectAdvancementsTabPacket;
+import net.minecraft.resources.Identifier;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
@@ -58,7 +60,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
 
     private static AdvancementPacketReceiver packetReceiver;
-    private static HashMap<String, NameKey> activeTabs = new HashMap<>();
+    private static HashMap<UUID, NamespacedKey> activeTabs = new HashMap<>();
 
     private static final List<CustomItem> customItems = new ArrayList<>();
     private AdvancementManager fileAdvancementManager;
@@ -83,7 +85,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
             }
             fileAdvancementManager.resetAccessible();
         }
-        fileAdvancementManager = new AdvancementManager(new NameKey(API_NAMESPACE, "file"));
+        fileAdvancementManager = new AdvancementManager(new NamespacedKey(API_NAMESPACE, "file"));
         fileAdvancementManager.makeAccessible();
         loadFileAdvancements();
 
@@ -98,7 +100,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     public void onLoad() {
         instance = this;
         loadCustomItems();
-        fileAdvancementManager = new AdvancementManager(new NameKey(API_NAMESPACE, "file"));
+        fileAdvancementManager = new AdvancementManager(new NamespacedKey(API_NAMESPACE, "file"));
         fileAdvancementManager.makeAccessible();
         loadFileAdvancements();
     }
@@ -140,7 +142,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
                     String fileName = file.getName();
                     String key = fileName.substring(0, fileName.length() - 5);//Remove .json
-                    items.add(item.deserialize(new NameKey(namespace, path + key)));
+                    items.add(item.deserialize(new NamespacedKey(namespace, path + key)));
                 } catch (Exception e) {
                     if (os != null) {
                         try {
@@ -159,7 +161,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     private void loadFileAdvancements() {
         File location = new File(getDataFolder().getAbsolutePath() + File.separator + "advancements" + File.separator);
 
-        HashMap<NameKey, SerializedAdvancement> advancements = new HashMap<>();
+        HashMap<NamespacedKey, SerializedAdvancement> advancements = new HashMap<>();
 
         location.mkdirs();
         File[] files = location.listFiles();
@@ -170,19 +172,19 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
             }
         }
 
-        List<NameKey> missingAdvancements = new ArrayList<>(advancements.keySet());
-        HashMap<NameKey, Advancement> createdAdvancements = new HashMap<NameKey, Advancement>();
+        List<NamespacedKey> missingAdvancements = new ArrayList<>(advancements.keySet());
+        HashMap<NamespacedKey, Advancement> createdAdvancements = new HashMap<NamespacedKey, Advancement>();
 
         while (missingAdvancements.size() > 0) {
-            Iterator<NameKey> missingIterator = missingAdvancements.iterator();
+            Iterator<NamespacedKey> missingIterator = missingAdvancements.iterator();
             int processedAdvancements = 0;
 
             while (missingIterator.hasNext()) {
-                NameKey name = missingIterator.next();
+                NamespacedKey name = missingIterator.next();
                 SerializedAdvancement serializedAdvancement = advancements.get(name);
-                NameKey parent = serializedAdvancement.getParent();
+                String parent = serializedAdvancement.getParent();
 
-                if (parent == null || createdAdvancements.containsKey(parent)) {
+                if (parent == null || createdAdvancements.containsKey(NamespacedKey.fromString(parent))) {
                     final Advancement advancement = Advancement.fromSerialized(name, serializedAdvancement, createdAdvancements);
 
                     //Register
@@ -195,18 +197,19 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
             //Abort adding Advancements if no advancements were able to be processed
             if (processedAdvancements == 0) {
-                for (NameKey name : missingAdvancements) {
+                for (NamespacedKey name : missingAdvancements) {
                     getLogger().warning("Unable to load Advancement " + name + ": Parent does not exist");
                 }
                 break;
             }
         }
+        getLogger().info("Loaded " + createdAdvancements.size() + " advancements from files.");
     }
 
-    private HashMap<NameKey, SerializedAdvancement> loadAdvancementsFromNamespace(String namespace, String path, File location) {
+    private HashMap<NamespacedKey, SerializedAdvancement> loadAdvancementsFromNamespace(String namespace, String path, File location) {
         File[] files = location.listFiles();
 
-        HashMap<NameKey, SerializedAdvancement> advancements = new HashMap<>();
+        HashMap<NamespacedKey, SerializedAdvancement> advancements = new HashMap<>();
 
         for (File file : files) {
             if (file.isDirectory()) {
@@ -223,7 +226,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
 
                     String fileName = file.getName();
                     String key = fileName.substring(0, fileName.length() - 5);//Remove .json
-                    advancements.put(new NameKey(namespace, path + key), advancement);
+                    advancements.put(new NamespacedKey(namespace, path + key), advancement);
                 } catch (Exception e) {
                     if (os != null) {
                         try {
@@ -324,7 +327,7 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
      * @param rootAdvancement The name of the tab to change to
      */
     public static void setActiveTab(Player player, String rootAdvancement) {
-        setActiveTab(player, new NameKey(rootAdvancement));
+        setActiveTab(player, NamespacedKey.fromString(rootAdvancement));
     }
 
     /**
@@ -333,16 +336,17 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
      * @param player          The player whose Tab should be changed
      * @param rootAdvancement The name of the tab to change to
      */
-    public static void setActiveTab(Player player, @Nullable NameKey rootAdvancement) {
+    public static void setActiveTab(Player player, @Nullable NamespacedKey rootAdvancement) {
         setActiveTab(player, rootAdvancement, true);
     }
 
-    static void setActiveTab(Player player, NameKey rootAdvancement, boolean update) {
+    static void setActiveTab(Player player, NamespacedKey rootAdvancement, boolean update) {
         if (update) {
-            ClientboundSelectAdvancementsTabPacket packet = new ClientboundSelectAdvancementsTabPacket(rootAdvancement == null ? null : rootAdvancement.getMinecraftKey());
+            final Identifier tabIdentifier = rootAdvancement == null ? null : namespacedKeyToIdentifier(rootAdvancement);
+            ClientboundSelectAdvancementsTabPacket packet = new ClientboundSelectAdvancementsTabPacket(tabIdentifier);
             ((CraftPlayer) player).getHandle().connection.send(packet);
         }
-        activeTabs.put(player.getUniqueId().toString(), rootAdvancement);
+        activeTabs.put(player.getUniqueId(), rootAdvancement);
     }
 
     /**
@@ -351,8 +355,8 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
      * @param player Player to check
      * @return The active Tab
      */
-    public static NameKey getActiveTab(Player player) {
-        return activeTabs.get(player.getUniqueId().toString());
+    public static NamespacedKey getActiveTab(Player player) {
+        return activeTabs.get(player.getUniqueId());
     }
 
     private static Material getMaterial(String input) {
@@ -365,13 +369,20 @@ public class CrazyAdvancementsAPI extends JavaPlugin implements Listener {
     }
 
     private static CustomItem getCustomItem(String input) {
-        NameKey inputName = new NameKey(input);
+        NamespacedKey inputName = NamespacedKey.fromString(input);
         for (CustomItem item : customItems) {
-            if (item.getName().isSimilar(inputName)) {
+            if (item.getName().equals(inputName)) {
                 return item;
             }
         }
         return null;
+    }
+
+    public static Identifier namespacedKeyToIdentifier(final NamespacedKey key) {
+        return Identifier.fromNamespaceAndPath(
+            key.namespace(),
+            key.value()
+        );
     }
 
     public static ItemStack getItemStack(String input, CommandSender... commandSender) {

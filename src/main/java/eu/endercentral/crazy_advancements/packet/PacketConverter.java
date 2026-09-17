@@ -1,6 +1,6 @@
 package eu.endercentral.crazy_advancements.packet;
 
-import eu.endercentral.crazy_advancements.NameKey;
+import eu.endercentral.crazy_advancements.CrazyAdvancementsAPI;
 import eu.endercentral.crazy_advancements.advancement.Advancement;
 import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay;
 import eu.endercentral.crazy_advancements.advancement.AdvancementFlag;
@@ -12,6 +12,7 @@ import net.minecraft.core.ClientAsset;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStackTemplate;
+import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 
 import java.util.ArrayList;
@@ -22,30 +23,30 @@ public class PacketConverter {
 
     private static final AdvancementRewards advancementRewards = new AdvancementRewards(0, new ArrayList<>(), new ArrayList<>(), Optional.empty());
 
-    private static HashMap<NameKey, Float> smallestX = new HashMap<>();
-    private static HashMap<NameKey, Float> smallestY = new HashMap<>();
+    private static HashMap<NamespacedKey, Float> smallestX = new HashMap<>();
+    private static HashMap<NamespacedKey, Float> smallestY = new HashMap<>();
 
-    public static void setSmallestX(NameKey tab, float smallestX) {
+    public static void setSmallestX(NamespacedKey tab, float smallestX) {
         PacketConverter.smallestX.put(tab, smallestX);
     }
 
-    public static float getSmallestX(NameKey key) {
+    public static float getSmallestX(NamespacedKey key) {
         return smallestX.containsKey(key) ? smallestX.get(key) : 0;
     }
 
-    public static void setSmallestY(NameKey tab, float smallestY) {
+    public static void setSmallestY(NamespacedKey tab, float smallestY) {
         PacketConverter.smallestY.put(tab, smallestY);
     }
 
-    public static float getSmallestY(NameKey key) {
+    public static float getSmallestY(NamespacedKey key) {
         return smallestY.containsKey(key) ? smallestY.get(key) : 0;
     }
 
-    public static float generateX(NameKey tab, float displayX) {
+    public static float generateX(NamespacedKey tab, float displayX) {
         return displayX - getSmallestX(tab);
     }
 
-    public static float generateY(NameKey tab, float displayY) {
+    public static float generateY(NamespacedKey tab, float displayY) {
         return displayY - getSmallestY(tab);
     }
 
@@ -60,8 +61,22 @@ public class PacketConverter {
 
         ItemStackTemplate icon = new ItemStackTemplate(CraftItemStack.asNMSCopy(display.getIcon()).getItem());
 
-        boolean hasBackgroundTexture = display.getBackgroundTexture() != null;
-        Optional<ClientAsset.ResourceTexture> backgroundTexture = hasBackgroundTexture ? Optional.of(new ClientAsset.ResourceTexture(Identifier.parse(display.getBackgroundTexture()))) : Optional.empty();
+        final String backgroundTextureString = display.getBackgroundTexture();
+        final Optional<ClientAsset.ResourceTexture> backgroundTexture;
+        if (backgroundTextureString != null) {
+            // The ResourceTexture record needs exactly the following:
+            // id: minecraft:block/acacia_log
+            // texturePath: minecraft:textures/block/acacia_log.png
+            // Therefore, we extract it from the texturePath, which we are assumed to be given.
+            final NamespacedKey backgroundTextureKey = NamespacedKey.fromString(backgroundTextureString);
+            final String keyValue = backgroundTextureKey.value();
+            final boolean startsWithTextures = keyValue.startsWith("textures/");
+            final String rawImagePath = startsWithTextures ? keyValue.substring("textures/".length()) : keyValue;
+            final Identifier finalId = Identifier.fromNamespaceAndPath(backgroundTextureKey.namespace(), rawImagePath.substring(0, rawImagePath.length() - ".png".length()));
+            backgroundTexture = Optional.of(new ClientAsset.ResourceTexture(finalId, Identifier.parse(backgroundTextureString)));
+        } else {
+            backgroundTexture = Optional.empty();
+        }
 
         float x = generateX(advancement.getTab(), display.generateX());
         float y = generateY(advancement.getTab(), display.generateY());
@@ -70,7 +85,7 @@ public class PacketConverter {
         net.minecraft.advancements.DisplayInfo advDisplay = new net.minecraft.advancements.DisplayInfo(icon, title, description, backgroundTexture, display.getFrame().getNMS(), false, false, advancement.hasFlag(AdvancementFlag.SEND_WITH_HIDDEN_BOOLEAN));
         advDisplay.setLocation(x, y);
 
-        Optional<Identifier> parent = advancement.getParent() == null ? Optional.empty() : Optional.of(advancement.getParent().getName().getMinecraftKey());
+        Optional<Identifier> parent = advancement.getParent() == null ? Optional.empty() : Optional.of(CrazyAdvancementsAPI.namespacedKeyToIdentifier(advancement.getParent().getName()));
         net.minecraft.advancements.Advancement adv = new net.minecraft.advancements.Advancement(parent, Optional.of(advDisplay), advancementRewards, advancement.getCriteria().getCriteria(), advancement.getCriteria().getAdvancementRequirements(), false);
 
         return adv;
@@ -102,7 +117,7 @@ public class PacketConverter {
      * @deprecated No longer required for parent dummies. Might be removed in a future version.
      */
     @Deprecated(forRemoval = true, since = "2.1.15")
-    public static net.minecraft.advancements.Advancement createDummy(NameKey name) {
+    public static net.minecraft.advancements.Advancement createDummy(NamespacedKey name) {
         net.minecraft.advancements.Advancement adv = new net.minecraft.advancements.Advancement(Optional.empty(), Optional.empty(), null, new HashMap<>(), new AdvancementRequirements(new ArrayList<>()), false);
         return adv;
     }

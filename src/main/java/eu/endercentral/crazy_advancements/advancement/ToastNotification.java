@@ -1,13 +1,13 @@
 package eu.endercentral.crazy_advancements.advancement;
 
 import eu.endercentral.crazy_advancements.CrazyAdvancementsAPI;
-import eu.endercentral.crazy_advancements.NameKey;
 import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay.AdvancementFrame;
 import eu.endercentral.crazy_advancements.advancement.criteria.Criteria;
 import eu.endercentral.crazy_advancements.advancement.progress.AdvancementProgress;
 import eu.endercentral.crazy_advancements.packet.ToastPacket;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -19,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public class ToastNotification {
 
-    public static final NameKey NOTIFICATION_NAME = new NameKey(CrazyAdvancementsAPI.API_NAMESPACE, "notification");
+    public static final NamespacedKey NOTIFICATION_NAME = new NamespacedKey(CrazyAdvancementsAPI.API_NAMESPACE, "notification");
     public static final Criteria NOTIFICATION_CRITERIA = new Criteria(1);
     public static final AdvancementProgress NOTIFICATION_PROGRESS = new AdvancementProgress(NOTIFICATION_CRITERIA.getRequirements());
 

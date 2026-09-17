@@ -72,13 +72,14 @@ public class ToastPacket {
         List<AdvancementHolder> advancements = new ArrayList<>();
         Set<Identifier> removedAdvancements = new HashSet<>();
         Map<Identifier, AdvancementProgress> progress = new HashMap<>();
+        final Identifier notificationNameIdentifier = Identifier.fromNamespaceAndPath(ToastNotification.NOTIFICATION_NAME.namespace(), ToastNotification.NOTIFICATION_NAME.value());
 
         //Populate Lists
         if (add) {
-            advancements.add(new AdvancementHolder(ToastNotification.NOTIFICATION_NAME.getMinecraftKey(), PacketConverter.toNmsToastAdvancement(getNotification())));
-            progress.put(ToastNotification.NOTIFICATION_NAME.getMinecraftKey(), ToastNotification.NOTIFICATION_PROGRESS.getNmsProgress());
+            advancements.add(new AdvancementHolder(notificationNameIdentifier, PacketConverter.toNmsToastAdvancement(getNotification())));
+            progress.put(notificationNameIdentifier, ToastNotification.NOTIFICATION_PROGRESS.getNmsProgress());
         } else {
-            removedAdvancements.add(ToastNotification.NOTIFICATION_NAME.getMinecraftKey());
+            removedAdvancements.add(notificationNameIdentifier);
         }
 
         //Create Packet
