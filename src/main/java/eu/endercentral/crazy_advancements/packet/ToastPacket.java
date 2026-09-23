@@ -1,6 +1,7 @@
 package eu.endercentral.crazy_advancements.packet;
 
 import eu.endercentral.crazy_advancements.advancement.ToastNotification;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
@@ -69,14 +70,16 @@ public class ToastPacket {
      */
     public ClientboundUpdateAdvancementsPacket build() {
         //Create Lists
-        List<AdvancementHolder> advancements = new ArrayList<>();
+        List<ClientboundUpdateAdvancementsPacket.PositionedAdvancement> advancements = new ArrayList<>();
         Set<Identifier> removedAdvancements = new HashSet<>();
         Map<Identifier, AdvancementProgress> progress = new HashMap<>();
         final Identifier notificationNameIdentifier = Identifier.fromNamespaceAndPath(ToastNotification.NOTIFICATION_NAME.namespace(), ToastNotification.NOTIFICATION_NAME.value());
 
         //Populate Lists
         if (add) {
-            advancements.add(new AdvancementHolder(notificationNameIdentifier, PacketConverter.toNmsToastAdvancement(getNotification())));
+            final Advancement advancement = PacketConverter.toNmsToastAdvancement(getNotification());
+            final AdvancementHolder holder = new AdvancementHolder(notificationNameIdentifier, advancement);
+            advancements.add(new ClientboundUpdateAdvancementsPacket.PositionedAdvancement(holder, 0, 0));
             progress.put(notificationNameIdentifier, ToastNotification.NOTIFICATION_PROGRESS.getNmsProgress());
         } else {
             removedAdvancements.add(notificationNameIdentifier);

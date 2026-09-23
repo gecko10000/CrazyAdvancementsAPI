@@ -2,6 +2,7 @@ package eu.endercentral.crazy_advancements.packet;
 
 import eu.endercentral.crazy_advancements.CrazyAdvancementsAPI;
 import eu.endercentral.crazy_advancements.advancement.Advancement;
+import eu.endercentral.crazy_advancements.advancement.AdvancementDisplay;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
@@ -97,7 +98,7 @@ public class AdvancementsPacket {
      */
     public ClientboundUpdateAdvancementsPacket build() {
         //Create Lists
-        List<net.minecraft.advancements.AdvancementHolder> advancements = new ArrayList<>();
+        List<ClientboundUpdateAdvancementsPacket.PositionedAdvancement> advancements = new ArrayList<>();
         Set<Identifier> removedAdvancements = new HashSet<>();
         Map<Identifier, AdvancementProgress> progress = new HashMap<>();
 
@@ -105,7 +106,11 @@ public class AdvancementsPacket {
         for (Advancement advancement : this.advancements) {
             final Identifier advancementName = CrazyAdvancementsAPI.namespacedKeyToIdentifier(advancement.getName());
             net.minecraft.advancements.Advancement nmsAdvancement = convertAdvancement(advancement);
-            advancements.add(new AdvancementHolder(advancementName, nmsAdvancement));
+            final AdvancementHolder holder = new AdvancementHolder(advancementName, nmsAdvancement);
+            final AdvancementDisplay display = advancement.getDisplay();
+            float x = PacketConverter.generateX(advancement.getTab(), display.generateX());
+            float y = PacketConverter.generateY(advancement.getTab(), display.generateY());
+            advancements.add(new ClientboundUpdateAdvancementsPacket.PositionedAdvancement(holder, x, y));
             progress.put(advancementName, advancement.getProgress(getPlayer()).getNmsProgress());
         }
         for (NamespacedKey removed : this.removedAdvancements) {

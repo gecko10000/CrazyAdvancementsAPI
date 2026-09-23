@@ -9,6 +9,7 @@ import io.papermc.paper.adventure.PaperAdventure;
 import net.minecraft.advancements.AdvancementRequirements;
 import net.minecraft.advancements.AdvancementRewards;
 import net.minecraft.core.ClientAsset;
+import net.minecraft.core.HolderSet;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStackTemplate;
@@ -21,7 +22,7 @@ import java.util.Optional;
 
 public class PacketConverter {
 
-    private static final AdvancementRewards advancementRewards = new AdvancementRewards(0, new ArrayList<>(), new ArrayList<>(), Optional.empty());
+    private static final AdvancementRewards advancementRewards = new AdvancementRewards(0, HolderSet.direct(new ArrayList<>()), new ArrayList<>(), Optional.empty());
 
     private static HashMap<NamespacedKey, Float> smallestX = new HashMap<>();
     private static HashMap<NamespacedKey, Float> smallestY = new HashMap<>();
@@ -78,12 +79,8 @@ public class PacketConverter {
             backgroundTexture = Optional.empty();
         }
 
-        float x = generateX(advancement.getTab(), display.generateX());
-        float y = generateY(advancement.getTab(), display.generateY());
-
         final Component title = PaperAdventure.asVanilla(display.getTitle()), description = PaperAdventure.asVanilla(display.getDescription());
         net.minecraft.advancements.DisplayInfo advDisplay = new net.minecraft.advancements.DisplayInfo(icon, title, description, backgroundTexture, display.getFrame().getNMS(), false, false, advancement.hasFlag(AdvancementFlag.SEND_WITH_HIDDEN_BOOLEAN));
-        advDisplay.setLocation(x, y);
 
         Optional<Identifier> parent = advancement.getParent() == null ? Optional.empty() : Optional.of(CrazyAdvancementsAPI.namespacedKeyToIdentifier(advancement.getParent().getName()));
         net.minecraft.advancements.Advancement adv = new net.minecraft.advancements.Advancement(parent, Optional.of(advDisplay), advancementRewards, advancement.getCriteria().getCriteria(), advancement.getCriteria().getAdvancementRequirements(), false);

@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "eu.endercentral.crazy_advancements"
-version = "26.2.0"
+version = "26.3.0"
 
 repositories {
     mavenCentral()
@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("26.2.build.+")
+    paperweight.paperDevBundle("26.3.build.+")
 }
 
 java {
@@ -49,6 +49,6 @@ paperweight {
 paper {
     name = "CrazyAdvancementsAPI"
     main = "eu.endercentral.crazy_advancements.CrazyAdvancementsAPI"
-    apiVersion = "26.2"
+    apiVersion = "26.3"
     load = BukkitPluginDescription.PluginLoadOrder.STARTUP
 }
