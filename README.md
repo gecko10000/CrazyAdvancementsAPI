@@ -4,6 +4,10 @@
 
 CrazyAdvancementsAPI is an API for creating and managing Advancements programmatically on Paper Servers.
 
+## Differences From Original API
+
+JSONMessage has been removed and replaced with Kyori `Component`. Support for Spigot has been dropped. NameKey has been replaced with NamespacedKey.
+
 ## Compiling
 
 Use `./gradlew build` to build the plugin. Output will be in `build/libs/`.
